@@ -1,0 +1,53 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: cronjob
+  namespace: ns-gudw2mcw
+spec:
+  jobTemplate:
+    spec:
+      completions: 1
+      template:
+        spec:
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: superedge.io/node-edge
+                        operator: In
+                        values:
+                          - enable
+                      - key: zone62
+                        operator: In
+                        values:
+                          - gudw2mcw
+          containers:
+            - name: cronjob
+              image: mysql:5.7
+              imagePullPolicy: IfNotPresent
+              command:
+                - "sh"
+                - "/var/db/script/mysqldump.sh"
+              volumeMounts:
+                - name: mysql-master-script
+                  mountPath: /var/db/script
+                - name: local-time
+                  mountPath: /etc/localtime
+                - name: mysql-master-backup
+                  mountPath: /var/db/backup
+          volumes:
+            - name: mysql-master-script
+              hostPath:
+                path: /home/zlzk/mysql-bak/script
+            - name: mysql-master-backup
+              hostPath:
+                path: /home/zlzk/mysql-bak
+            - name: local-time
+              hostPath:
+                path: /home/zlzk/mysql-bak/localtime
+          restartPolicy: OnFailure
+  schedule: "0 20 * * *"
+  failedJobsHistoryLimit: 5
+  successfulJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid
